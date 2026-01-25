@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model user {
+  id    Int         @id @default(autoincrement())
+  email String      @unique(map: "User_email_key")
+  name  String?
+  roles user_role[]
+}
+
+model role {
+  id    Int         @id @default(autoincrement())
+  name  String      @unique(map: "Role_name_key")
+  users user_role[]
+}
+
+model user_role {
+  user_id Int
+  role_id Int
+  role    role @relation(fields: [role_id], references: [id])
+  user    user @relation(fields: [user_id], references: [id])
+
+  @@id([user_id, role_id])
+  @@index([role_id])
+}
