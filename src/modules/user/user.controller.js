@@ -2,32 +2,39 @@ import prisma from "../../lib/prisma.js";
 
 export default {
     getAllUsers: async (req, res) => {
-        const users = await prisma.user.findMany({
+        const usersData = await prisma.user.findMany({
             include: {
-                roles: true
+                roles: {
+                    include: {
+                        role: true
+                    }
+                }
             }
         })
+
+
         res.json({
             success: true,
-            data: users,
+            data: usersData,
             message: 'Users fetched successfully'
         })
     },
 
     createUser: async (req, res) => {
-        const { name, email, roles } = req.body
+        const { name, email, roles, role } = req.body
+        const userRoles = roles || role
 
         const user = await prisma.user.create({
             data: {
                 name,
                 email,
-                roles: {
-                    create: roles.map((id) => ({
+                roles: (userRoles && userRoles.length > 0) ? {
+                    create: userRoles.map((id) => ({
                         role: {
                             connect: { id: parseInt(id) }
                         }
                     }))
-                }
+                } : undefined
             },
             include: {
                 roles: true
@@ -43,6 +50,7 @@ export default {
     updateUser: async (req, res) => {
         const { id } = req.params
         const { name, email, roles } = req.body
+        const userRoles = roles
 
         const user = await prisma.user.update({
             where: {
@@ -51,16 +59,21 @@ export default {
             data: {
                 name: name || undefined,
                 email: email || undefined,
-                roles: {
-                    delete: roles?.map((id) => ({
+                roles: (userRoles) ? {
+                    deleteMany: {},
+                    create: userRoles.map((id) => ({
                         role: {
                             connect: { id: parseInt(id) }
                         }
                     }))
-                }
+                } : undefined
             },
             include: {
-                roles: true
+                roles: {
+                    include: {
+                        role: true
+                    }
+                }
             }
         })
         res.json({

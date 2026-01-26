@@ -1,12 +1,13 @@
 import express from 'express'
-
+import cors from 'cors'
 // Routes
 import roleRouter from './modules/role/role.route.js'
 import userRouter from './modules/user/user.route.js'
 
 const app = express()
-const port = 3000
+const port = 8000
 
+app.use(cors())
 app.use(express.json())
 
 
