@@ -1,8 +1,9 @@
 import prisma from "../../lib/prisma.js";
+import bcrypt from 'bcryptjs';
 
 export default {
     getAllUsers: async (req, res) => {
-        const usersData = await prisma.user.findMany({
+        const users = await prisma.user.findMany({
             include: {
                 roles: {
                     include: {
@@ -12,22 +13,38 @@ export default {
             }
         })
 
+        const userData = users.map((user) => {
+            return {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                roles: user.roles.map((role) => {
+                    return {
+                        id: role.role.id,
+                        name: role.role.name
+                    }
+                })
+            }
+        })
 
         res.json({
             success: true,
-            data: usersData,
+            data: userData,
             message: 'Users fetched successfully'
         })
     },
 
     createUser: async (req, res) => {
-        const { name, email, roles, role } = req.body
+        const { name, email, password, roles, role } = req.body
         const userRoles = roles || role
+
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await prisma.user.create({
             data: {
                 name,
                 email,
+                password: hashedPassword,
                 roles: (userRoles && userRoles.length > 0) ? {
                     create: userRoles.map((id) => ({
                         role: {
@@ -103,6 +120,25 @@ export default {
             success: true,
             data: user,
             message: 'User deleted successfully'
+        })
+    },
+
+    changePassword: async (req, res) => {
+        const { id } = req.params
+        const { password } = req.body
+
+        const user = await prisma.user.update({
+            where: {
+                id: parseInt(id)
+            },
+            data: {
+                password
+            }
+        })
+        res.json({
+            success: true,
+            data: user,
+            message: 'Password changed successfully'
         })
     }
 }
